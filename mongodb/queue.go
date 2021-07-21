@@ -32,6 +32,8 @@ type QueueConfig struct {
 	Database         string // MongoDB database name
 	CollectionPrefix string // Prefix for all collections created in MongoDB
 	PollingInterval  time.Duration
+	IsTLS            bool   // iswith TLS
+	CAcrtFile        string // path to ca trust file
 }
 
 // Creates a new queue. The QueueConfig parameter will tell us how to connect
@@ -54,6 +56,23 @@ func NewQueue(conf QueueConfig) (monsterqueue.Queue, error) {
 		return nil, err
 	}
 	dialInfo.FailFast = true
+	// add support for TLS
+	if conf.IsTLS {
+       mgoCAFile := conf.CAcrtFile
+	   roots := x509.NewCertPool()
+	   ca, err := ioutil.ReadFile(mgoCAFile)
+	   if err != nil {
+		 return nil, err
+	   }
+	   roots.AppendCertsFromPEM(ca)
+	   tlsConfig := &tls.Config{}
+	   tlsConfig.RootCAs = roots
+	   dialInfo.DialServer = func(addr *mgo.ServerAddr) (net.Conn, error) {
+		 conn, err := tls.Dial("tcp", addr.String(), tlsConfig)
+				return conn, err
+	   }
+	}
+
 	q.session, err = mgo.DialWithInfo(dialInfo)
 	if err != nil {
 		return nil, err
