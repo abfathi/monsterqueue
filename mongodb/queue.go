@@ -11,7 +11,10 @@ import (
 	"runtime"
 	"sync"
 	"time"
-
+	"crypto/tls"
+	"crypto/x509"
+	"net"
+	"io/ioutil"
 	"github.com/tsuru/monsterqueue"
 	"github.com/tsuru/monsterqueue/log"
 	"gopkg.in/mgo.v2"
